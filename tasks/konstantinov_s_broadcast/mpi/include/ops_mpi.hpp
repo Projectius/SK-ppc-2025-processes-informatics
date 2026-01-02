@@ -2,9 +2,11 @@
 
 #include "konstantinov_s_broadcast/common/include/common.hpp"
 #include "task/include/task.hpp"
+#include <mpi.h>
 
 namespace konstantinov_s_broadcast {
 
+template <typename T>
 class KonstantinovSBroadcastMPI : public BaseTask {
  public:
   static constexpr ppc::task::TypeOfTask GetStaticTypeOfTask() {
@@ -15,7 +17,6 @@ class KonstantinovSBroadcastMPI : public BaseTask {
  private:
   bool ValidationImpl() override;
   bool PreProcessingImpl() override;
-  static void CountSignChange(int &res, const EType *data, int start, int iterations);
   bool RunImpl() override;
   bool PostProcessingImpl() override;
 };
@@ -37,5 +38,6 @@ template <>
 constexpr MPI_Datatype get_mpi_type<double>() {
   return MPI_DOUBLE;
 }
+
 
 }  // namespace konstantinov_s_broadcast
