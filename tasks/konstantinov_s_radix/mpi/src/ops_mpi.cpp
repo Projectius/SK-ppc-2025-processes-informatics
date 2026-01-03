@@ -14,112 +14,129 @@ namespace konstantinov_s_radix {
 KonstantinovSRadixMPI::KonstantinovSRadixMPI(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
   GetInput() = in;
-  GetOutput() = 0;
+  //GetOutput() = 0;
+  SetTypeOfTask(GetStaticTypeOfTask());
+  // копируем данные интуитивно (внешний код может переиспользовать in)
+  // GetInput().clear();
+  // GetInput().insert(GetInput().end(), in.begin(), in.end());
+  // GetOutput().clear();
 }
 
 bool KonstantinovSRadixMPI::ValidationImpl() {
   // std::cout << "\t\tValidation mpi\n";
-  return !GetInput().empty();
+  return true;
 }
 
 bool KonstantinovSRadixMPI::PreProcessingImpl() {
   return true;
 }
 
+void KonstantinovSRadixMPI::LocalRadixPass(InType &block) {
+  if (block.size() <= 1) return;
+
+  size_t n = block.size();
+  InType tmp(n);
+
+  constexpr int BYTES = 4;
+  for (int shift = 0; shift < BYTES * 8; shift += 8) {
+    std::array<size_t, 256> cnt{};
+    for (size_t i = 0; i < n; ++i) {
+      uint32_t u = static_cast<uint32_t>(block[i]) ^ 0x80000000u;
+      uint8_t key = static_cast<uint8_t>((u >> shift) & 0xFFu);
+      ++cnt[key];
+    }
+    size_t prefix = 0;
+    for (size_t j = 0; j < cnt.size(); ++j) {
+      size_t cur = cnt[j];
+      cnt[j] = prefix;
+      prefix += cur;
+    }
+    for (size_t i = 0; i < n; ++i) {
+      uint32_t u = static_cast<uint32_t>(block[i]) ^ 0x80000000u;
+      uint8_t key = static_cast<uint8_t>((u >> shift) & 0xFFu);
+      tmp[cnt[key]++] = block[i];
+    }
+    block.swap(tmp);
+  }
+}
+
+// обмен и простое слияние попарно
+void KonstantinovSRadixMPI::PairwiseMergeExchange(InType &local_block, int prank, int comm_sz) {
+  for (int step = 1; step < comm_sz; step <<= 1) {
+    if ((prank % (2 * step)) == 0) {
+      int partner = prank + step;
+      if (partner < comm_sz) {
+        // получает длину
+        int remote_len = 0;
+        MPI_Recv(&remote_len, 1, MPI_INT, partner, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+        InType remote;
+        if (remote_len > 0) {
+          remote.resize(static_cast<size_t>(remote_len));
+          MPI_Recv(remote.data(), remote_len, MPI_INT, partner, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        }
+
+        InType merged;
+        merged.reserve(local_block.size() + remote.size());
+        std::merge(local_block.begin(), local_block.end(),
+                   remote.begin(), remote.end(),
+                   std::back_inserter(merged));
+        local_block.swap(merged);
+      }
+    } else {
+      int target = prank - step;
+      int my_len = static_cast<int>(local_block.size());
+
+      MPI_Send(&my_len, 1, MPI_INT, target, 0, MPI_COMM_WORLD);
+      if (my_len > 0) {
+        MPI_Send(local_block.data(), my_len, MPI_INT, target, 0, MPI_COMM_WORLD);
+      }
+
+      local_block.clear();
+      break;
+    }
+  }
+}
+
 bool KonstantinovSRadixMPI::RunImpl() {
-  int pcount = 0;
-  MPI_Comm_size(MPI_COMM_WORLD, &pcount);
-  int rank = 0;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  int step = 0;  // chunk size = step+1
-  EType *sendbuf = nullptr;
-  int rem = 0;
-  int elemcount = 0;  // не пересылается, известен только корню
-  if (rank == 0) {
-    auto input = GetInput();  // получаем только на нулевом процессе - корне
-    elemcount = static_cast<int>(input.size());
-    // sendbuf = input.data(); //input инвалидируется позже????
-    sendbuf = new EType[elemcount];
-    std::memcpy(sendbuf, input.data(), input.size() * sizeof(EType));
-    //  нужно для перекрывающихся областей pcount= 3 [5] 6/3=2 -> 012 234 4
-    step = (elemcount + pcount - 1) / pcount;
-    rem = elemcount - (step * (pcount - 1));
-  }
-  if (step < 2) {
-    step = 0;
-    rem = elemcount;
+  int prank = 0, comm_sz = 0;
+  MPI_Comm_rank(MPI_COMM_WORLD, &prank);
+  MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
+
+  int total_n = 0;
+  if (prank == 0) total_n = static_cast<int>(GetInput().size());
+  MPI_Bcast(&total_n, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+  // sendcounts displs
+  std::vector<int> sendcounts(comm_sz), displs(comm_sz);
+  int base = total_n / comm_sz;
+  int rem  = total_n % comm_sz;
+  int acc = 0;
+  for (int i = 0; i < comm_sz; ++i) {
+    sendcounts[i] = base + (i < rem ? 1 : 0);
+    displs[i] = acc;
+    acc += sendcounts[i];
   }
 
-  MPI_Bcast(&step, 1, MPI_INT, 0, MPI_COMM_WORLD);  // корень отправляет, остальные получают
-  int chunksz = step + 1;
-  int *sendcounts = nullptr;
-  int *displs = nullptr;
-  EType *recbuf = nullptr;
+  int my_count = sendcounts[prank];
+InType local_block;
+if (my_count > 0) local_block.resize(static_cast<size_t>(my_count));
 
-  if (rank == 0) {
-    // std::cout<<elemcount<<" "<<step<<" "<<step*(pcount-1)<<" "<<rem<<std::endl;
-    sendcounts = new int[pcount];
-    displs = new int[pcount];
-    sendcounts[0] = 0;  // на корень не шлём
-    displs[0] = 0;
-    // обозначаем перекрывающиеся области (последний элемент = первый в следующем куске)
-    for (int i = 1; i < pcount; i++) {
-      sendcounts[i] = chunksz;
-      displs[i] = (i - 1) * step;
-    }
-  } else {
-    recbuf = new EType[chunksz];  // только некорни выыделяют буфер
+// my_count == 0 ==> nullptr in recvbuf
+MPI_Scatterv(GetInput().data(), sendcounts.data(), displs.data(), MPI_INT,
+             (my_count > 0 ? local_block.data() : nullptr), my_count, MPI_INT,
+             0, MPI_COMM_WORLD);
+
+
+  LocalRadixPass(local_block);
+  PairwiseMergeExchange(local_block, prank, comm_sz);
+
+  if (prank == 0) {
+    // std::cout<<"CALCULATED\n";
+    // for(int i=0;i<local_block.size();i++)
+    //   std::cout<<local_block[i]<<"\n";
+    GetOutput() = std::move(local_block);
   }
-
-  // существуют только буферы нужные получателям/отправителю, ненужные = nullptr (например sendbuf у некорней)
-  // rank0: sendbuf, sendcounts, displs
-  // rank1+: recbuf
-  MPI_Scatterv(sendbuf, sendcounts, displs, MPI_DOUBLE, recbuf, rank == 0 ? 0 : chunksz, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
-  // if(rank!=0){
-  //   std::cout<<"RANK "<<rank<<" got: ";
-  //   for(int i=0;i<step;i++)
-  //   {
-  //     std::cout<<recbuf[i]<<" ";
-  //   }
-  //   std::cout<<"\n\n";
-  // }else{
-  //     std::cout<<"INPUT: ";
-  //   for(int i=0;i<elemcount;i++)
-  //       std::cout<<sendbuf[i]<<" ";
-  //     std::cout<<"\n\n";
-  // }
-
-  int local_res = 0;
-
-  if (rank == 0) {
-    delete[] sendcounts;
-    delete[] displs;
-    if (rem > 1) {
-      CountSignChange(local_res, sendbuf, elemcount - rem, elemcount - 1);
-    }
-
-  } else {
-    CountSignChange(local_res, recbuf, 0, step);
-  }
-  // std::cout<<"RANK "<<rank<<" counted "<<local_res<<std::endl;
-
-  // rank0: sendbuf
-  // rank1+: recbuf
-
-  if (rank == 0) {
-    delete[] sendbuf;
-  } else {
-    delete[] recbuf;
-  }
-
-  // all memory deleted
-
-  int global_res = 0;
-  MPI_Allreduce(&local_res, &global_res, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-
-  // std::cout<<"MPI result: "<<global_res<<" from rank "<<rank<<"\n";
-  GetOutput() = global_res;
   return true;
 }
 

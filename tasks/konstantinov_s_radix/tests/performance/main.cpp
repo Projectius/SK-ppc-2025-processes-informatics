@@ -5,29 +5,54 @@
 #include "konstantinov_s_radix/common/include/common.hpp"
 #include "konstantinov_s_radix/mpi/include/ops_mpi.hpp"
 #include "konstantinov_s_radix/seq/include/ops_seq.hpp"
-#include "konstantinov_s_radix/tests/testgen.h"
 #include "util/include/perf_test_util.hpp"
 
 namespace konstantinov_s_radix {
 
 class KonstantinovSRadixTests : public ppc::util::BaseRunPerfTests<InType, OutType> {
-  const int kCount_ = 150000000;
   InType input_data_;
   OutType result_right_{};
 
   void SetUp() override {
-    input_data_.resize(kCount_);
+    if(ppc::util::GetMPIRank() != 0){
+      return;
+    }
 
-    const std::array<EType, 15> arr = {1, -1, 23838, -121, -1223, -567, 12334, 42, -12, 2, -43, 33, 44, -7, 1};
-    const int arrsz = 15;
-    const int chngcnt = 10;
+    std::ifstream file(ppc::util::GetAbsoluteTaskPath(PPC_ID_konstantinov_s_radix, "big_2_n800000.txt"));
 
-    result_right_ = GenerateTestData(arr.data(), arrsz, chngcnt, input_data_);
-    // std::cout<<input_data_.capacity()<<" "<<kCount_<<"\n";
+    if (file.is_open()) {
+      //std::cout<<"OPENED "<<fileparam<<"\n";
+      int size = 0;
+      file >> size;
+
+      InType input_data(size);
+      for (int i = 0; i < size; i++) {
+        
+        float f;
+        file >> f;
+        input_data[i] = f;
+        
+      }
+
+      OutType right_data(size);
+      for (int i = 0; i < size; i++) {
+        float f;
+        file >> f;
+        right_data[i] = f;
+        //std::cout<<input_data[i]<<"\t"<<right_data[i]<<"\n";
+      }
+      input_data_ = input_data;
+      result_right_ = right_data;
+    }
   }
 
   bool CheckTestOutputData(OutType &output_data) final {
-    return result_right_ == output_data;
+    if(ppc::util::GetMPIRank()!=0){
+      return true;
+    }
+    //std::cout<<"CHECK: \n";
+    //for(int i=0;i<output_data.size();i++)
+    return (output_data == result_right_);
   }
 
   InType GetTestInputData() final {
