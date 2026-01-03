@@ -2,8 +2,8 @@
 
 #include <mpi.h>
 // #include <numeric>
-//#include <cstring>
-//#include <vector>
+// #include <cstring>
+// #include <vector>
 // #include<iostream>
 
 #include "konstantinov_s_radix/common/include/common.hpp"
@@ -14,7 +14,7 @@ namespace konstantinov_s_radix {
 KonstantinovSRadixMPI::KonstantinovSRadixMPI(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
   GetInput() = in;
-  //GetOutput() = 0;
+  // GetOutput() = 0;
   SetTypeOfTask(GetStaticTypeOfTask());
   // копируем данные интуитивно (внешний код может переиспользовать in)
   // GetInput().clear();
@@ -32,7 +32,9 @@ bool KonstantinovSRadixMPI::PreProcessingImpl() {
 }
 
 void KonstantinovSRadixMPI::LocalRadixPass(InType &block) {
-  if (block.size() <= 1) return;
+  if (block.size() <= 1) {
+    return;
+  }
 
   size_t n = block.size();
   InType tmp(n);
@@ -78,9 +80,7 @@ void KonstantinovSRadixMPI::PairwiseMergeExchange(InType &local_block, int prank
 
         InType merged;
         merged.reserve(local_block.size() + remote.size());
-        std::merge(local_block.begin(), local_block.end(),
-                   remote.begin(), remote.end(),
-                   std::back_inserter(merged));
+        std::merge(local_block.begin(), local_block.end(), remote.begin(), remote.end(), std::back_inserter(merged));
         local_block.swap(merged);
       }
     } else {
@@ -104,13 +104,15 @@ bool KonstantinovSRadixMPI::RunImpl() {
   MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
 
   int total_n = 0;
-  if (prank == 0) total_n = static_cast<int>(GetInput().size());
+  if (prank == 0) {
+    total_n = static_cast<int>(GetInput().size());
+  }
   MPI_Bcast(&total_n, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
   // sendcounts displs
   std::vector<int> sendcounts(comm_sz), displs(comm_sz);
   int base = total_n / comm_sz;
-  int rem  = total_n % comm_sz;
+  int rem = total_n % comm_sz;
   int acc = 0;
   for (int i = 0; i < comm_sz; ++i) {
     sendcounts[i] = base + (i < rem ? 1 : 0);
@@ -119,14 +121,14 @@ bool KonstantinovSRadixMPI::RunImpl() {
   }
 
   int my_count = sendcounts[prank];
-InType local_block;
-if (my_count > 0) local_block.resize(static_cast<size_t>(my_count));
+  InType local_block;
+  if (my_count > 0) {
+    local_block.resize(static_cast<size_t>(my_count));
+  }
 
-// my_count == 0 ==> nullptr in recvbuf
-MPI_Scatterv(GetInput().data(), sendcounts.data(), displs.data(), MPI_INT,
-             (my_count > 0 ? local_block.data() : nullptr), my_count, MPI_INT,
-             0, MPI_COMM_WORLD);
-
+  // my_count == 0 ==> nullptr in recvbuf
+  MPI_Scatterv(GetInput().data(), sendcounts.data(), displs.data(), MPI_INT,
+               (my_count > 0 ? local_block.data() : nullptr), my_count, MPI_INT, 0, MPI_COMM_WORLD);
 
   LocalRadixPass(local_block);
   PairwiseMergeExchange(local_block, prank, comm_sz);

@@ -2,8 +2,8 @@
 
 // #include <iostream>
 // #include <numeric>
-//#include <cstddef>
-//#include <vector>
+// #include <cstddef>
+// #include <vector>
 
 #include "konstantinov_s_radix/common/include/common.hpp"
 // #include "util/include/util.hpp"
@@ -13,12 +13,12 @@ namespace konstantinov_s_radix {
 KonstantinovSRadixSEQ::KonstantinovSRadixSEQ(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
   GetInput() = in;
-  //GetOutput() = 0;
+  // GetOutput() = 0;
 }
 
 bool KonstantinovSRadixSEQ::ValidationImpl() {
   // std::cout << "\t\tValidation seq\n";
-  return true;//!GetInput().empty();
+  return true;  //! GetInput().empty();
 }
 
 bool KonstantinovSRadixSEQ::PreProcessingImpl() {
@@ -34,7 +34,6 @@ bool KonstantinovSRadixSEQ::RunImpl() {
   }
 
   InType aux(n);
-
 
   constexpr int BYTES = 4;
   for (int byte_shift = 0; byte_shift < BYTES * 8; byte_shift += 8) {
