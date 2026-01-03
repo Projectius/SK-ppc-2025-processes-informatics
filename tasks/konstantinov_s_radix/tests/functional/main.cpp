@@ -2,13 +2,14 @@
 #include <stb/stb_image.h>
 
 // #include <algorithm>
-#include <array>
-#include <cstddef>
+//#include <array>
+//#include <cstddef>
 // #include <cstdint>
 // #include <numeric>
 // #include <stdexcept>
 #include <string>
 #include <tuple>
+#include <fstream>
 // #include <utility>
 // #include <vector>
 
@@ -46,17 +47,17 @@ class KonstantinovSRadixTests : public ppc::util::BaseRunFuncTests<InType, OutTy
       InType input_data(size);
       for (int i = 0; i < size; i++) {
         
-        float f;
-        file >> f;
-        input_data[i] = f;
+        
+        file >> input_data[i];
+        
         
       }
 
       OutType right_data(size);
       for (int i = 0; i < size; i++) {
-        float f;
-        file >> f;
-        right_data[i] = f;
+
+        file >> right_data[i];
+        
         //std::cout<<input_data[i]<<"\t"<<right_data[i]<<"\n";
       }
       input_data_ = input_data;
@@ -81,7 +82,7 @@ class KonstantinovSRadixTests : public ppc::util::BaseRunFuncTests<InType, OutTy
   }
 
  private:
-  InType input_data_;
+  InType input_data_{};
   OutType result_right_{};
 };
 

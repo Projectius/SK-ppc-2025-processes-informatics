@@ -2,8 +2,8 @@
 
 #include <mpi.h>
 // #include <numeric>
-#include <cstring>
-#include <vector>
+//#include <cstring>
+//#include <vector>
 // #include<iostream>
 
 #include "konstantinov_s_radix/common/include/common.hpp"

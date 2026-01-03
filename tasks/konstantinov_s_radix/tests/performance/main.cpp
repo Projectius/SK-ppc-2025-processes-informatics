@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include <array>
+//#include <array>
 
 #include "konstantinov_s_radix/common/include/common.hpp"
 #include "konstantinov_s_radix/mpi/include/ops_mpi.hpp"
@@ -28,17 +28,13 @@ class KonstantinovSRadixTests : public ppc::util::BaseRunPerfTests<InType, OutTy
       InType input_data(size);
       for (int i = 0; i < size; i++) {
         
-        float f;
-        file >> f;
-        input_data[i] = f;
+        file >> input_data[i];
         
       }
 
       OutType right_data(size);
       for (int i = 0; i < size; i++) {
-        float f;
-        file >> f;
-        right_data[i] = f;
+        file >> right_data[i];
         //std::cout<<input_data[i]<<"\t"<<right_data[i]<<"\n";
       }
       input_data_ = input_data;
@@ -56,7 +52,7 @@ class KonstantinovSRadixTests : public ppc::util::BaseRunPerfTests<InType, OutTy
   }
 
   InType GetTestInputData() final {
-    return input_data_;
+    return input_data_{};
   }
 };
 
