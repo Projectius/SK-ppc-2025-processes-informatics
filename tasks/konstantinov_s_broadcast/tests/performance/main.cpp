@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
-#include<cstring>
+
+#include <cstring>
 
 #include "konstantinov_s_broadcast/common/include/common.hpp"
 #include "konstantinov_s_broadcast/mpi/include/ops_mpi.hpp"

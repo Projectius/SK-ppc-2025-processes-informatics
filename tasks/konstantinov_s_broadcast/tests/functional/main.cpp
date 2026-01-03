@@ -7,9 +7,9 @@
 // #include <cstdint>
 // #include <numeric>
 // #include <stdexcept>
+#include <cstring>
 #include <string>
 #include <tuple>
-#include<cstring>
 // #include <utility>
 // #include <vector>
 
