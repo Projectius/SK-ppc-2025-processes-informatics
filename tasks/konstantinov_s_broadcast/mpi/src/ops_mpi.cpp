@@ -37,14 +37,15 @@ bool KonstantinovSBroadcastMPI<T>::RunImpl() {
   MPI_Comm_rank(MPI_COMM_WORLD, &prank);
   MPI_Comm_size(MPI_COMM_WORLD, &pcount);
 
+  const int TAG_COUNT = 1;
+  const int TAG_DATA = 2;
+
   MPI_Datatype mpi_type = GetMpiType<T>();
 
-  auto &buffer = this->GetInput();
-  int elem_count = static_cast<int>(buffer.size());
-  T *data = buffer.data();
+  T *odata = nullptr;
 
   int root_prank = pcount - 1;
-  int k = std::min(4, pcount);  // k-арное дерево
+  int k = std::min(2, pcount);  // k-арное дерево
 
   // ранг процесса в дереве
   int tree_rank = (prank - root_prank + pcount) % pcount;
@@ -53,30 +54,40 @@ bool KonstantinovSBroadcastMPI<T>::RunImpl() {
   int parent_tree_rank = (tree_rank == 0) ? -1 : (tree_rank - 1) / k;
   int parent_prank = (parent_tree_rank < 0) ? -1 : (parent_tree_rank + root_prank) % pcount;
 
-  // приём данных от родителя (если не корень)
-  if (tree_rank != 0) {
+  int recv_count = 0;
+  // приём данных от родителя (корень читает доступные ему данные)
+  if (tree_rank == 0) {
+    auto &ibuffer = this->GetInput();
+    int elem_count = static_cast<int>(ibuffer.size());
+    odata = ibuffer.data();
+    recv_count = elem_count;
+    this->GetOutput() = ibuffer;
+  } else {
     // std::cout << "Rank " << prank << " (t " << tree_rank << ") recv from "<< parent_prank << " (t " <<
     // parent_tree_rank << ")\n";
-    MPI_Recv(data, elem_count, mpi_type, parent_prank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    MPI_Recv(&recv_count, 1, MPI_INT, parent_prank, TAG_COUNT, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    odata = new T[recv_count];
+    MPI_Recv(odata, recv_count, mpi_type, parent_prank, TAG_DATA, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    memcpy(this->GetOutput().data(), odata, recv_count * sizeof(T));
   }
 
-  // вычисляем потомков
-  std::vector<int> child_pranks;
+  // вычисляем потомков и рассылаем
+  // std::vector<int> child_pranks;
   for (int i = 1; i <= k; ++i) {
     int child_tree_rank = (k * tree_rank) + i;
     if (child_tree_rank < pcount) {
       int child_prank = (child_tree_rank + root_prank) % pcount;
-      child_pranks.push_back(child_prank);
+      // std::cout << "Rank " << prank << " (t " << tree_rank << ") send to " << ch << "\n";
+      MPI_Send(&recv_count, 1, MPI_INT, child_prank, TAG_COUNT, MPI_COMM_WORLD);
+      MPI_Send(odata, recv_count, mpi_type, child_prank, TAG_DATA, MPI_COMM_WORLD);
+      // child_pranks.push_back(child_prank);
     }
   }
-
-  // рассылка
-  for (int ch : child_pranks) {
-    // std::cout << "Rank " << prank << " (t " << tree_rank << ") send to " << ch << "\n";
-    MPI_Send(data, elem_count, mpi_type, ch, 0, MPI_COMM_WORLD);
+  if (tree_rank != 0) {
+    delete[] odata;
   }
 
-  this->GetOutput() = buffer;
+  // this->GetOutput() = ibuffer;
   return true;
 }
 

@@ -57,8 +57,8 @@ TEST_P(KonstantinovSBroadcastTests, CustomBroadcast) {
   ExecuteTest(GetParam());
 }
 
-const std::array<TestType, 3> kTestParam = {
-    std::make_tuple(10, "10"), std::make_tuple(20, "20"),
+const std::array<TestType, 4> kTestParam = {
+    std::make_tuple(1, "1"), std::make_tuple(2, "2"), std::make_tuple(10, "10"),
     std::make_tuple(100, "100")};  // тесты с разным корнем дерева не получится создать (неизвестно колво процессов), но
                                    // корнем выбирается последний процесс в самой реализации для разнообразия
 

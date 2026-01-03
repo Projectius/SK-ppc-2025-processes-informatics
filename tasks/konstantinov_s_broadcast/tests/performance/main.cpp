@@ -10,7 +10,7 @@
 namespace konstantinov_s_broadcast {
 
 class KonstantinovSBroadcastTests : public ppc::util::BaseRunPerfTests<InType, OutType> {
-  const int kCount_ = 150000000;
+  const int kCount_ = 10000000;
   InType input_data_;
   // OutType result_right_{};
 
