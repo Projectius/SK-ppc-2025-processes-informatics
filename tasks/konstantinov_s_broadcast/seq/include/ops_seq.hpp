@@ -1,12 +1,15 @@
 #pragma once
+#include <vector>
 
 #include "konstantinov_s_broadcast/common/include/common.hpp"
 #include "task/include/task.hpp"
 
 namespace konstantinov_s_broadcast {
-
-class KonstantinovSBroadcastSEQ : public BaseTask {
+template <typename T>
+class KonstantinovSBroadcastSEQ : public BaseTask<T> {
  public:
+  using InType = std::vector<T>;
+  using OutType = InType;
   static constexpr ppc::task::TypeOfTask GetStaticTypeOfTask() {
     return ppc::task::TypeOfTask::kSEQ;
   }

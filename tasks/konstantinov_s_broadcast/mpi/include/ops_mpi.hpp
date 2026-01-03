@@ -1,14 +1,18 @@
 #pragma once
+#include <mpi.h>
+
+#include <vector>
 
 #include "konstantinov_s_broadcast/common/include/common.hpp"
 #include "task/include/task.hpp"
-#include <mpi.h>
 
 namespace konstantinov_s_broadcast {
 
 template <typename T>
-class KonstantinovSBroadcastMPI : public BaseTask {
+class KonstantinovSBroadcastMPI : public BaseTask<T> {
  public:
+  using InType = std::vector<T>;
+  using OutType = InType;
   static constexpr ppc::task::TypeOfTask GetStaticTypeOfTask() {
     return ppc::task::TypeOfTask::kMPI;
   }
@@ -38,6 +42,5 @@ template <>
 constexpr MPI_Datatype get_mpi_type<double>() {
   return MPI_DOUBLE;
 }
-
 
 }  // namespace konstantinov_s_broadcast

@@ -1,18 +1,25 @@
 #pragma once
 
-// #include <string>
-// #include <tuple>
-// #include <cstdint>
+#include <cstdint>
+#include <string>
+#include <tuple>
 #include <vector>
 
 #include "task/include/task.hpp"
 
 namespace konstantinov_s_broadcast {
 
-using EType = double;
+using TestType = std::tuple<int, std::string>;
+
+using ETypeInt = int;
+using ETypeFloat = float;
+using ETypeDouble = double;
+
+using EType = ETypeInt;
 using InType = std::vector<EType>;
-using OutType = int;
-using TestType = int;  // std::tuple<std::tuple<std::vector<int>, int>, std::string>;
-using BaseTask = ppc::task::Task<InType, OutType>;
+using OutType = InType;
+
+template <typename T>
+using BaseTask = ppc::task::Task<std::vector<T>, std::vector<T>>;
 
 }  // namespace konstantinov_s_broadcast

@@ -3,42 +3,40 @@
 // #include <iostream>
 // #include <numeric>
 #include <cstddef>
+#include <cstring>  // memcpy
 #include <vector>
 
 #include "konstantinov_s_broadcast/common/include/common.hpp"
 // #include "util/include/util.hpp"
 
 namespace konstantinov_s_broadcast {
-
-KonstantinovSBroadcastSEQ::KonstantinovSBroadcastSEQ(const InType &in) {
-  SetTypeOfTask(GetStaticTypeOfTask());
-  GetInput() = in;
-  GetOutput() = 0;
+template <typename T>
+KonstantinovSBroadcastSEQ<T>::KonstantinovSBroadcastSEQ(const InType &in) {
+  this->SetTypeOfTask(GetStaticTypeOfTask());
+  this->GetInput() = in;
+  this->GetOutput().resize(this->GetInput().size());
 }
-
-bool KonstantinovSBroadcastSEQ::ValidationImpl() {
+template <typename T>
+bool KonstantinovSBroadcastSEQ<T>::ValidationImpl() {
   // std::cout << "\t\tValidation seq\n";
-  return !GetInput().empty();
+  return !this->GetInput().empty();
 }
-
-bool KonstantinovSBroadcastSEQ::PreProcessingImpl() {
+template <typename T>
+bool KonstantinovSBroadcastSEQ<T>::PreProcessingImpl() {
+  return true;
+}
+template <typename T>
+bool KonstantinovSBroadcastSEQ<T>::RunImpl() {
+  memcpy(this->GetOutput().data(), this->GetInput().data(), this->GetInput().size() * sizeof(T));
+  return true;
+}
+template <typename T>
+bool KonstantinovSBroadcastSEQ<T>::PostProcessingImpl() {
   return true;
 }
 
-bool KonstantinovSBroadcastSEQ::RunImpl() {
-  const auto invec = GetInput();
-  int res = 0;
-  size_t iterations = invec.size() - 1;
-  const EType *v = invec.data();
-  for (size_t i = 0; i < iterations; i++) {
-    res += static_cast<int>((v[i] > 0) != (v[i + 1] > 0));  // + 1 если занки разные
-  }
-  GetOutput() = res;
-  return true;
-}
-
-bool KonstantinovSBroadcastSEQ::PostProcessingImpl() {
-  return true;
-}
+template class KonstantinovSBroadcastSEQ<ETypeInt>;
+template class KonstantinovSBroadcastSEQ<ETypeFloat>;
+template class KonstantinovSBroadcastSEQ<ETypeDouble>;
 
 }  // namespace konstantinov_s_broadcast
