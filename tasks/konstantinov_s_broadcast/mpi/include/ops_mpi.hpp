@@ -26,20 +26,20 @@ class KonstantinovSBroadcastMPI : public BaseTask<T> {
 };
 
 template <typename T>
-constexpr MPI_Datatype get_mpi_type();
+constexpr MPI_Datatype GetMpiType();
 
 template <>
-constexpr MPI_Datatype get_mpi_type<int>() {
+constexpr MPI_Datatype GetMpiType<int>() {
   return MPI_INT;
 }
 
 template <>
-constexpr MPI_Datatype get_mpi_type<float>() {
+constexpr MPI_Datatype GetMpiType<float>() {
   return MPI_FLOAT;
 }
 
 template <>
-constexpr MPI_Datatype get_mpi_type<double>() {
+constexpr MPI_Datatype GetMpiType<double>() {
   return MPI_DOUBLE;
 }
 

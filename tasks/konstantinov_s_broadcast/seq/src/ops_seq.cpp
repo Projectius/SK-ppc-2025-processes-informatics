@@ -2,9 +2,7 @@
 
 // #include <iostream>
 // #include <numeric>
-#include <cstddef>
 #include <cstring>  // memcpy
-#include <vector>
 
 #include "konstantinov_s_broadcast/common/include/common.hpp"
 // #include "util/include/util.hpp"

@@ -1,11 +1,10 @@
 #include "konstantinov_s_broadcast/mpi/include/ops_mpi.hpp"
 
 #include <mpi.h>
-// #include <numeric>
 #include <cstring>
-#include <type_traits>
 #include <vector>
 // #include<iostream>
+#include <algorithm>
 
 #include "konstantinov_s_broadcast/common/include/common.hpp"
 // #include "util/include/util.hpp"
@@ -32,11 +31,12 @@ bool KonstantinovSBroadcastMPI<T>::PreProcessingImpl() {
 
 template <typename T>
 bool KonstantinovSBroadcastMPI<T>::RunImpl() {
-  int prank = 0, pcount = 0;
+  int prank = 0;
+  int pcount = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &prank);
   MPI_Comm_size(MPI_COMM_WORLD, &pcount);
 
-  MPI_Datatype mpi_type = get_mpi_type<T>();
+  MPI_Datatype mpi_type = GetMpiType<T>();
 
   auto &buffer = this->GetInput();
   int elem_count = static_cast<int>(buffer.size());
