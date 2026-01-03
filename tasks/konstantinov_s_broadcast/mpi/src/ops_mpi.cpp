@@ -3,7 +3,6 @@
 #include <mpi.h>
 
 #include <cstring>
-#include <vector>
 // #include<iostream>
 #include <algorithm>
 
@@ -37,8 +36,8 @@ bool KonstantinovSBroadcastMPI<T>::RunImpl() {
   MPI_Comm_rank(MPI_COMM_WORLD, &prank);
   MPI_Comm_size(MPI_COMM_WORLD, &pcount);
 
-  const int TAG_COUNT = 1;
-  const int TAG_DATA = 2;
+  const int tag_count = 1;
+  const int tag_data = 2;
 
   MPI_Datatype mpi_type = GetMpiType<T>();
 
@@ -65,9 +64,9 @@ bool KonstantinovSBroadcastMPI<T>::RunImpl() {
   } else {
     // std::cout << "Rank " << prank << " (t " << tree_rank << ") recv from "<< parent_prank << " (t " <<
     // parent_tree_rank << ")\n";
-    MPI_Recv(&recv_count, 1, MPI_INT, parent_prank, TAG_COUNT, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    MPI_Recv(&recv_count, 1, MPI_INT, parent_prank, tag_count, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     odata = new T[recv_count];
-    MPI_Recv(odata, recv_count, mpi_type, parent_prank, TAG_DATA, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    MPI_Recv(odata, recv_count, mpi_type, parent_prank, tag_data, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     memcpy(this->GetOutput().data(), odata, recv_count * sizeof(T));
   }
 
@@ -78,8 +77,8 @@ bool KonstantinovSBroadcastMPI<T>::RunImpl() {
     if (child_tree_rank < pcount) {
       int child_prank = (child_tree_rank + root_prank) % pcount;
       // std::cout << "Rank " << prank << " (t " << tree_rank << ") send to " << ch << "\n";
-      MPI_Send(&recv_count, 1, MPI_INT, child_prank, TAG_COUNT, MPI_COMM_WORLD);
-      MPI_Send(odata, recv_count, mpi_type, child_prank, TAG_DATA, MPI_COMM_WORLD);
+      MPI_Send(&recv_count, 1, MPI_INT, child_prank, tag_count, MPI_COMM_WORLD);
+      MPI_Send(odata, recv_count, mpi_type, child_prank, tag_data, MPI_COMM_WORLD);
       // child_pranks.push_back(child_prank);
     }
   }
