@@ -10,7 +10,7 @@
 namespace konstantinov_s_radix {
 
 class KonstantinovSRadixTests : public ppc::util::BaseRunPerfTests<InType, OutType> {
-  InType input_data_;
+  InType input_data_{};
   OutType result_right_{};
 
   void SetUp() override {
@@ -52,7 +52,7 @@ class KonstantinovSRadixTests : public ppc::util::BaseRunPerfTests<InType, OutTy
   }
 
   InType GetTestInputData() final {
-    return input_data_{};
+    return input_data_;
   }
 };
 
