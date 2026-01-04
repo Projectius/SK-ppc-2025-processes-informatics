@@ -41,7 +41,7 @@ class KonstantinovSRadixTests : public ppc::util::BaseRunPerfTests<InType, OutTy
   }
 
   bool CheckTestOutputData(OutType &output_data) final {
-    if (ppc::util::GetMPIRank() != 0) {
+    if (ppc::util::IsUnderMpirun() && ppc::util::GetMPIRank() != 0) {
       return true;
     }
     // std::cout<<"CHECK: \n";
