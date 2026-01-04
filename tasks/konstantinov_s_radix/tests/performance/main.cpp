@@ -14,9 +14,9 @@ class KonstantinovSRadixTests : public ppc::util::BaseRunPerfTests<InType, OutTy
   OutType result_right_{};
 
   void SetUp() override {
-    if (ppc::util::GetMPIRank() != 0) {
-      return;
-    }
+    // if (ppc::util::GetMPIRank() != 0) {
+    //   return;
+    // }
 
     std::ifstream file(ppc::util::GetAbsoluteTaskPath(PPC_ID_konstantinov_s_radix, "big_2_n800000.txt"));
 

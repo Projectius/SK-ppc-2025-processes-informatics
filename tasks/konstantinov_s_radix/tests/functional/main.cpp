@@ -32,9 +32,9 @@ class KonstantinovSRadixTests : public ppc::util::BaseRunFuncTests<InType, OutTy
   void SetUp() override {
     // std::cout<<"SETUP!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n";
 
-    if (ppc::util::GetMPIRank() != 0) {
-      return;
-    }
+    // if (ppc::util::GetMPIRank() != 0) {
+    //   return;
+    // }
 
     TestType fileparam =
         std::get<static_cast<std::size_t>(ppc::util::GTestParamIndex::kTestParams)>(GetParam()) + ".txt";
