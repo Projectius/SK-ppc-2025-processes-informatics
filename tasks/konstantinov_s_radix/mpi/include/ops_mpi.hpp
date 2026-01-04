@@ -15,8 +15,8 @@ class KonstantinovSRadixMPI : public BaseTask {
  private:
   bool ValidationImpl() override;
   bool PreProcessingImpl() override;
-  void LocalRadixPass(InType &block);
-  void PairwiseMergeExchange(InType &local_block, int prank, int comm_sz);
+  static void LocalRadixPass(InType &block);
+  static void PairwiseMergeExchange(InType &local_block, int prank, int comm_sz);
   bool RunImpl() override;
   bool PostProcessingImpl() override;
 };

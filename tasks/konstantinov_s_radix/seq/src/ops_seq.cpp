@@ -2,8 +2,11 @@
 
 // #include <iostream>
 // #include <numeric>
-// #include <cstddef>
+#include <cstddef>
+#include <cstdint>
 // #include <vector>
+#include <algorithm>
+#include <array>
 
 #include "konstantinov_s_radix/common/include/common.hpp"
 // #include "util/include/util.hpp"
@@ -35,28 +38,28 @@ bool KonstantinovSRadixSEQ::RunImpl() {
 
   InType aux(n);
 
-  constexpr int BYTES = 4;
-  for (int byte_shift = 0; byte_shift < BYTES * 8; byte_shift += 8) {
+  constexpr int kBytes = 4;
+  for (int byte_shift = 0; byte_shift < kBytes * 8; byte_shift += 8) {
     std::array<size_t, 256> bucket{};
     for (size_t i = 0; i < n; ++i) {
-      uint32_t u = static_cast<uint32_t>(arr[i]);
+      auto u = static_cast<uint32_t>(arr[i]);
       // signed->unsigned для сортировки
-      u ^= 0x80000000u;
-      uint8_t key = static_cast<uint8_t>((u >> byte_shift) & 0xFFu);
-      ++bucket[key];
+      u ^= 0x80000000U;
+      auto key = static_cast<uint8_t>((u >> byte_shift) & 0xFFU);
+      ++bucket.at(key);
     }
     size_t acc = 0;
-    for (size_t k = 0; k < bucket.size(); ++k) {
-      size_t t = bucket[k];
-      bucket[k] = acc;
+    for (auto &elem : bucket) {
+      size_t t = elem;
+      elem = acc;
       acc += t;
     }
 
     for (size_t i = 0; i < n; ++i) {
-      uint32_t u = static_cast<uint32_t>(arr[i]);
-      u ^= 0x80000000u;
-      uint8_t key = static_cast<uint8_t>((u >> byte_shift) & 0xFFu);
-      aux[bucket[key]++] = arr[i];
+      auto u = static_cast<uint32_t>(arr[i]);
+      u ^= 0x80000000U;
+      auto key = static_cast<uint8_t>((u >> byte_shift) & 0xFFU);
+      aux.at(bucket.at(key)++) = arr.at(i);
     }
 
     arr.swap(aux);

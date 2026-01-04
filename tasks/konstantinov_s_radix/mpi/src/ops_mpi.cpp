@@ -1,9 +1,14 @@
 #include "konstantinov_s_radix/mpi/include/ops_mpi.hpp"
 
 #include <mpi.h>
+
+#include <algorithm>
+#include <array>
+#include <cstdint>
+#include <iterator>
 // #include <numeric>
 // #include <cstring>
-// #include <vector>
+#include <vector>
 // #include<iostream>
 
 #include "konstantinov_s_radix/common/include/common.hpp"
@@ -39,24 +44,24 @@ void KonstantinovSRadixMPI::LocalRadixPass(InType &block) {
   size_t n = block.size();
   InType tmp(n);
 
-  constexpr int BYTES = 4;
-  for (int shift = 0; shift < BYTES * 8; shift += 8) {
+  constexpr int kBytes = 4;
+  for (int shift = 0; shift < kBytes * 8; shift += 8) {
     std::array<size_t, 256> cnt{};
     for (size_t i = 0; i < n; ++i) {
-      uint32_t u = static_cast<uint32_t>(block[i]) ^ 0x80000000u;
-      uint8_t key = static_cast<uint8_t>((u >> shift) & 0xFFu);
-      ++cnt[key];
+      auto u = static_cast<uint32_t>(block[i]) ^ 0x80000000U;
+      auto key = static_cast<uint8_t>((u >> shift) & 0xFFU);
+      ++cnt.at(key);
     }
     size_t prefix = 0;
-    for (size_t j = 0; j < cnt.size(); ++j) {
-      size_t cur = cnt[j];
-      cnt[j] = prefix;
+    for (auto &cur_val : cnt) {
+      size_t cur = cur_val;
+      cur_val = prefix;
       prefix += cur;
     }
     for (size_t i = 0; i < n; ++i) {
-      uint32_t u = static_cast<uint32_t>(block[i]) ^ 0x80000000u;
-      uint8_t key = static_cast<uint8_t>((u >> shift) & 0xFFu);
-      tmp[cnt[key]++] = block[i];
+      auto u = static_cast<uint32_t>(block[i]) ^ 0x80000000U;
+      auto key = static_cast<uint8_t>((u >> shift) & 0xFFU);
+      tmp.at(cnt.at(key)++) = block.at(i);
     }
     block.swap(tmp);
   }
@@ -80,7 +85,7 @@ void KonstantinovSRadixMPI::PairwiseMergeExchange(InType &local_block, int prank
 
         InType merged;
         merged.reserve(local_block.size() + remote.size());
-        std::merge(local_block.begin(), local_block.end(), remote.begin(), remote.end(), std::back_inserter(merged));
+        std::ranges::merge(local_block, remote, std::back_inserter(merged));
         local_block.swap(merged);
       }
     } else {
@@ -99,7 +104,8 @@ void KonstantinovSRadixMPI::PairwiseMergeExchange(InType &local_block, int prank
 }
 
 bool KonstantinovSRadixMPI::RunImpl() {
-  int prank = 0, comm_sz = 0;
+  int prank = 0;
+  int comm_sz = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &prank);
   MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
 
@@ -110,7 +116,8 @@ bool KonstantinovSRadixMPI::RunImpl() {
   MPI_Bcast(&total_n, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
   // sendcounts displs
-  std::vector<int> sendcounts(comm_sz), displs(comm_sz);
+  std::vector<int> sendcounts(comm_sz);
+  std::vector<int> displs(comm_sz);
   int base = total_n / comm_sz;
   int rem = total_n % comm_sz;
   int acc = 0;

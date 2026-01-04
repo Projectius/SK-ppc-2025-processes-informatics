@@ -7,11 +7,16 @@
 #include "konstantinov_s_radix/seq/include/ops_seq.hpp"
 #include "util/include/perf_test_util.hpp"
 
+// #include <cstddef>
+#include <fstream>
+// #include <string>
+#include "util/include/util.hpp"
+
 namespace konstantinov_s_radix {
 
 class KonstantinovSRadixTests : public ppc::util::BaseRunPerfTests<InType, OutType> {
-  InType input_data_{};
-  OutType result_right_{};
+  InType input_data_;
+  OutType result_right_;
 
   void SetUp() override {
     if (ppc::util::IsUnderMpirun() && ppc::util::GetMPIRank() != 0) {

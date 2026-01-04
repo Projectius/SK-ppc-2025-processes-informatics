@@ -2,8 +2,8 @@
 #include <stb/stb_image.h>
 
 // #include <algorithm>
-// #include <array>
-// #include <cstddef>
+#include <array>
+#include <cstddef>
 // #include <cstdint>
 // #include <numeric>
 // #include <stdexcept>
@@ -76,8 +76,8 @@ class KonstantinovSRadixTests : public ppc::util::BaseRunFuncTests<InType, OutTy
   }
 
  private:
-  InType input_data_{};
-  OutType result_right_{};
+  InType input_data_;
+  OutType result_right_;
 };
 
 namespace {
